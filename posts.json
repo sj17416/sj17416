@@ -1,0 +1,9 @@
+[
+  {
+    "id": "first-post-001",
+    "title": "첫 번째 자동화 글",
+    "content_file": "sample.html",
+    "labels": ["자동화"],
+    "mode": "draft"
+  }
+]

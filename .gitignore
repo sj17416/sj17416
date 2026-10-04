@@ -1,0 +1,38 @@
+# 비밀 정보 — 절대 커밋하지 않음
+.env
+.env.*
+!.env.example
+credentials.json
+client_secret*.json
+token.json
+connections.sec
+connections.tmp
+
+# 실행 데이터 / 상태
+BlogFlow-data/
+jobs/
+state.json
+.run.lock
+test-server.json
+*.log
+
+# 빌드 산출물 (EXE는 GitHub Releases에 첨부)
+build/
+dist/
+*.spec
+*.exe
+*.zip
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+
+# OS / 에디터
+Thumbs.db
+desktop.ini
+.DS_Store
+.vscode/
+.idea/
