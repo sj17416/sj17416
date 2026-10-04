@@ -23,8 +23,9 @@ All user-facing text, docs, and UI are in **Korean**.
 - `content_engine.py`: Offline topic table (official source URLs per topic), draft templates, `seo_review()`.
 - `writer.py`: Builds articles. `offline_article()` needs no key. `ai_article()` calls the OpenAI Responses API. `validate()` and `render()` produce the Blogger HTML with ad slots.
 - `deep_writer.py`: Two-step AI writing: `investigate()` does research, then `deep_article()` writes, then `quality()` checks.
-- `autopilot.py`: Scheduled pipeline: `prepare`, `deliver`, `tick`.
-- `channels.py`: Posting to Threads, Facebook Page, and X, plus `summaries()`.
+- `autopilot.py`: Scheduled pipeline. `tick` runs every 30 s and starts a cycle when `automation-last.json.next_run` has passed. It then schedules the next run at a random point within `interval_min`~`interval_max` hours. `pick` takes this month's top-N keywords by volume, then breadth-first related keywords cached in `auto-related.json`. It never repeats a keyword across months. `prepare` writes the post and `deliver` publishes it. `notify` sends a best-effort Telegram alert.
+- `channels.py`: Posting to Threads, Facebook Page, and X, plus `telegram()` alerts (Bot API) and `summaries()`.
+- `studio.py --background`: Runs without opening a window, for unattended automation. Launching the app a second time reopens the window through `BlogFlow-data/.server.json`. `자동실행-등록.cmd` registers a shortcut in the Windows Startup folder.
 - `naver_handoff.py`: Packages an article for manual pasting into Naver Blog, which has no write API.
 
 ## Run (development)

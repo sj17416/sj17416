@@ -65,7 +65,7 @@ def get_keys():
 
 
 def save_keys(updates):
-    allowed=['naver_ad_key','naver_ad_secret','naver_customer','naver_client','naver_secret','openai_key','openai_model','threads_token','facebook_token','facebook_page','facebook_version','x_token']
+    allowed=['naver_ad_key','naver_ad_secret','naver_customer','naver_client','naver_secret','openai_key','openai_model','threads_token','facebook_token','facebook_page','facebook_version','x_token','telegram_token','telegram_chat']
     with DATA_LOCK:
         keys=get_keys()
         for key in allowed:
@@ -79,7 +79,7 @@ def connections():
     keys=get_keys()
     return {'naver_ad':all(keys.get(k) for k in ['naver_ad_key','naver_ad_secret','naver_customer']),
         'naver_trend':bool(keys.get('naver_client') and keys.get('naver_secret')),'openai':bool(keys.get('openai_key')),
-        'openai_model':keys.get('openai_model','gpt-4.1-mini'),'google':(ROOT/'credentials.json').exists(),'threads':bool(keys.get('threads_token')),'facebook':bool(keys.get('facebook_token') and keys.get('facebook_page')),'x':bool(keys.get('x_token'))}
+        'openai_model':keys.get('openai_model','gpt-4.1-mini'),'google':(ROOT/'credentials.json').exists(),'threads':bool(keys.get('threads_token')),'facebook':bool(keys.get('facebook_token') and keys.get('facebook_page')),'x':bool(keys.get('x_token')),'telegram':bool(keys.get('telegram_token') and keys.get('telegram_chat'))}
 
 
 def read_store(name,default):
@@ -175,7 +175,16 @@ def action(name,payload):
             import channels
             for channel in cfg['channels']:
                 if channel!='blogger':channels.check(channel,get_keys())
-        write_store('automation.json',cfg);return {'saved':True}
+        if cfg.get('telegram') and not connections()['telegram']:raise ValueError('텔레그램 봇 토큰과 채팅 ID를 연결 설정에서 먼저 저장하세요.')
+        previous=read_store('automation.json',{})
+        write_store('automation.json',cfg)
+        if cfg.get('enabled') and not previous.get('enabled'):
+            # Turning automation on starts the first run within a minute.
+            last=read_store('automation-last.json',{});last.pop('next_run',None);write_store('automation-last.json',last)
+        return {'saved':True}
+    if name=='telegram-test':
+        import channels
+        return channels.telegram('🔔 BlogFlow 텔레그램 알림 테스트입니다. 글이 발행되면 여기로 알려 드릴게요.',get_keys())
     if name=='automation-prepare':return task(lambda:autopilot.prepare(sys.modules[__name__]))
     if name=='automation-deliver':return task(lambda:autopilot.deliver(sys.modules[__name__],payload['id']))
     if name=='automation-edit':
@@ -338,7 +347,10 @@ def main():
         name='Local\\BlogFlow-'+hashlib.sha256(str(ROOT.resolve()).casefold().encode()).hexdigest()[:24]
         INSTANCE_MUTEX=kernel.CreateMutexW(None,False,name)
         if kernel.GetLastError()==183:
-            if '--self-test' not in sys.argv and '--serve-test' not in sys.argv:ctypes.windll.user32.MessageBoxW(None,'BlogFlow가 이미 실행 중입니다. 열려 있는 앱 창을 사용하세요.','BlogFlow',0)
+            if '--self-test' not in sys.argv and '--serve-test' not in sys.argv and '--background' not in sys.argv:
+                # Running in the background (e.g. started with Windows): reopen its window.
+                try:open_app(json.loads((ROOT/'.server.json').read_text(encoding='utf-8'))['url'])
+                except Exception:ctypes.windll.user32.MessageBoxW(None,'BlogFlow가 이미 실행 중입니다. 열려 있는 앱 창을 사용하세요.','BlogFlow',0)
             return
     if sys.stdout is None:
         sys.stdout=open(ROOT/'app.log','a',encoding='utf-8');sys.stderr=sys.stdout
@@ -356,7 +368,9 @@ def main():
         SERVER.server_close();return
     if '--serve-test' in sys.argv:
         (ROOT/'test-server.json').write_text(json.dumps({'url':url,'token':TOKEN,'port':SERVER.server_port}),encoding='utf-8')
-    else:open_app(url)
+    else:
+        (ROOT/'.server.json').write_text(json.dumps({'url':url}),encoding='utf-8')
+        if '--background' not in sys.argv:open_app(url)
     def scheduler():
         while True:
             time.sleep(30)

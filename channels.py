@@ -25,6 +25,16 @@ def post(channel,text,keys):
     if not ident:raise ValueError('게시 ID를 받지 못했습니다. 채널에서 직접 게시 여부를 확인하세요.')
     return {'id':str(ident)}
 
+def telegram(text,keys):
+    """Private alert to the owner's chat through their own bot (Bot API sendMessage)."""
+    token=str(keys.get('telegram_token',''));chat=str(keys.get('telegram_chat',''))
+    if not token or not chat:raise ValueError('텔레그램 봇 토큰과 채팅 ID를 연결 설정에서 입력하세요.')
+    if not re.fullmatch(r'\d+:[\w-]+',token):raise ValueError('텔레그램 봇 토큰 형식을 확인하세요. (숫자:문자 형태)')
+    if not re.fullmatch(r'-?\d+|@\w+',chat):raise ValueError('텔레그램 채팅 ID는 숫자(예: 123456789) 또는 @채널이름이어야 합니다.')
+    result=request_json('POST','https://api.telegram.org/bot'+token+'/sendMessage',data={'chat_id':chat,'text':text[:4000]})
+    if not result.get('ok'):raise ValueError('텔레그램 알림을 보내지 못했습니다. 봇에게 먼저 /start 를 보냈는지 확인하세요.')
+    return {'id':str(result.get('result',{}).get('message_id',''))}
+
 def summaries(doc,url):
     description=doc.get('description','')
     return {'threads':doc['title'][:100]+'\n\n'+description[:250]+'\n\n자세한 조건·출처: '+url,'facebook':doc['title']+'\n\n'+description+'\n\n'+ '\n'.join('• '+s['heading'] for s in doc['sections'][:4])+'\n\n자세한 안내: '+url,'x':doc['keyword'][:24]+' 확인 가이드\n대상·조건·절차와 놓치기 쉬운 점을 정리했습니다.\n'+url}
