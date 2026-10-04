@@ -31,12 +31,10 @@ All user-facing text, docs, and UI are in **Korean**.
 
 ```powershell
 py -3 -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt requests
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
 .\.venv\Scripts\python.exe studio.py          # web studio
 .\.venv\Scripts\python.exe blogger_auto.py blogs  # CLI: list blogs
 ```
-
-`research.py` imports `requests`, but `requirements.txt` does not list it yet. Add it when you touch dependencies.
 
 ## Build (EXE)
 
