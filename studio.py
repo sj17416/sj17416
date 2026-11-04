@@ -23,6 +23,8 @@ import writer
 import deep_writer
 import autopilot
 import naver_handoff
+import tistory_handoff
+import youtube
 
 ASSETS=Path(getattr(sys,'_MEIPASS',Path(__file__).resolve().parent))
 ROOT=Path(os.environ.get('BLOGFLOW_DATA_DIR', str(Path(sys.executable).resolve().parent/'BlogFlow-data' if getattr(sys,'frozen',False) else Path(__file__).resolve().parent/'BlogFlow-data')))
@@ -79,7 +81,7 @@ def connections():
     keys=get_keys()
     return {'naver_ad':all(keys.get(k) for k in ['naver_ad_key','naver_ad_secret','naver_customer']),
         'naver_trend':bool(keys.get('naver_client') and keys.get('naver_secret')),'openai':bool(keys.get('openai_key')),
-        'openai_model':keys.get('openai_model','gpt-4.1-mini'),'google':(ROOT/'credentials.json').exists(),'threads':bool(keys.get('threads_token')),'facebook':bool(keys.get('facebook_token') and keys.get('facebook_page')),'x':bool(keys.get('x_token')),'telegram':bool(keys.get('telegram_token') and keys.get('telegram_chat'))}
+        'openai_model':keys.get('openai_model','gpt-4.1-mini'),'google':(ROOT/'credentials.json').exists(),'youtube':(ROOT/'youtube-token.json').exists(),'threads':bool(keys.get('threads_token')),'facebook':bool(keys.get('facebook_token') and keys.get('facebook_page')),'x':bool(keys.get('x_token')),'telegram':bool(keys.get('telegram_token') and keys.get('telegram_chat'))}
 
 
 def read_store(name,default):
@@ -262,6 +264,22 @@ def action(name,payload):
         if not re.fullmatch(r'[\w-]+',ident):raise ValueError('저장 글을 선택하세요.')
         return engine.read_json(ROOT/'favorites'/(ident+'.json'))
     if name=='naver-package':return naver_handoff.package(payload['doc'])
+    if name=='tistory-package':return tistory_handoff.package(payload['doc'],payload.get('design'))
+    if name=='youtube-meta':
+        writer.validate(payload['doc']);return {'title':payload['doc']['title'][:100],'description':youtube.describe(payload['doc'],str(payload.get('post_url',''))),'tags':tistory_handoff.tags(payload['doc'])}
+    if name=='youtube-channels':
+        def yt_channels():
+            with OAUTH_LOCK:return [{'id':c['id'],'title':c['snippet']['title']} for c in youtube.channels(ROOT)]
+        return task(yt_channels)
+    if name=='youtube-upload':
+        youtube.validate(payload)
+        def yt_upload():
+            with OAUTH_LOCK:return youtube.upload(ROOT,payload)
+        return task(yt_upload)
+    if name=='youtube-reset':
+        if BUSY:raise ValueError('진행 중인 작업이 끝난 뒤 초기화하세요.')
+        (ROOT/'youtube-token.json').unlink(missing_ok=True);return {'reset':True}
+    if name=='youtube-reset-pending':return {'cleared':youtube.reset_pending(ROOT)}
     if name=='export':
         writer.validate(payload['doc'])
         return {'html':writer.render(payload['doc'],payload.get('design'),payload.get('ads')), 'json':json.dumps(payload,ensure_ascii=False,indent=2)}

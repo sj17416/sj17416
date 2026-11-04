@@ -27,6 +27,8 @@ All user-facing text, docs, and UI are in **Korean**.
 - `channels.py`: Posting to Threads, Facebook Page, and X, plus `telegram()` alerts (Bot API) and `summaries()`.
 - `studio.py --background`: Runs without opening a window, for unattended automation. Launching the app a second time reopens the window through `BlogFlow-data/.server.json`. `자동실행-등록.cmd` registers a shortcut in the Windows Startup folder.
 - `naver_handoff.py`: Packages an article for manual pasting into Naver Blog, which has no write API.
+- `tistory_handoff.py`: Packages an article (HTML without ad slots, title candidates, tags) for pasting into Tistory's HTML editor. The Tistory Open API was shut down in 2024, so there is no auto-posting.
+- `youtube.py`: YouTube Data API v3 video upload. It reuses `credentials.json` but keeps its own `youtube-token.json` (scope `youtube.upload`). Uploads default to **private**, and a `publish_at` forces private + scheduled. `youtube-state.json` makes it idempotent. An upload left in `sending` is never auto-retried; the user clears it after checking YouTube Studio.
 
 ## Run (development)
 
@@ -45,7 +47,7 @@ The app is built with PyInstaller as a one-folder build named `BlogFlow`, from `
 
 - Runtime data lives in `BlogFlow-data/`. That folder sits next to the EXE when frozen, or next to `studio.py` in dev. `BLOGFLOW_DATA_DIR` overrides the location.
 - API keys are stored in `BlogFlow-data/connections.sec`, **encrypted with Windows DPAPI** (`crypt()` in `studio.py`). The allowed key names are in `save_keys()`. Never write keys in plain text, never log them, and keep the `[비공개]` masking in `task()` and `autopilot.clean_error()`.
-- `credentials.json` (OAuth desktop client), `token.json`, `state.json`, `.env`, and `connections.sec` must never be committed. `.gitignore` covers them. Check `git status` before every commit.
+- `credentials.json` (OAuth desktop client), `token.json`, `youtube-token.json`, `state.json`, `.env`, and `connections.sec` must never be committed. `.gitignore` covers them. Check `git status` before every commit.
 
 ## Conventions
 
