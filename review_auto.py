@@ -71,7 +71,7 @@ def make(app,count=1):
             try:imgs=images(p['title'],cfg['category'],keys,cfg['images'])
             except Exception as exc:img_error=clean(exc,keys)
             entry={'id':datetime.now(research.KST).strftime('%Y%m%d-%H%M%S')+'-'+secrets.token_hex(2),'created':datetime.now(research.KST).isoformat(timespec='minutes'),
-                'movie':p['title'],'title':r['title'],'body':attach(body,imgs,p['title']),'images':imgs,'image_error':img_error,'source':p['source'],'critique':p['critique'],
+                'movie':p['title'],'title':r['title'],'body':body,'images':imgs,'image_error':img_error,'source':p['source'],'critique':p['critique'],
                 'sources':p['sources'],'chars':r['chars'],'status':'new'}
             items.append(entry);made.append(entry);app.write_store('reviews.json',items[-300:])
         return made
