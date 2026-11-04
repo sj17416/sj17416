@@ -30,7 +30,7 @@ Maintain **BlogFlow Studio**, a Windows tool that researches keywords, drafts Ko
 | Blogger API | `blogger_auto.py` |
 | Research | `research.py` (Naver SearchAd, DataLab) |
 | Writing | `content_engine.py`, `writer.py`, `deep_writer.py` |
-| Automation | `autopilot.py`, `channels.py`, `naver_handoff.py`, `tistory_handoff.py`, `youtube.py` |
+| Automation | `autopilot.py`, `channels.py`, `naver_handoff.py`, `tistory_handoff.py`, `source_writer.py`, `youtube.py` |
 | Docs | `사용설명서.md`, `앱-사용법.md`, `광고-설정-안내.md` |
 
 ## Commit style

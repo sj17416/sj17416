@@ -25,6 +25,7 @@ import autopilot
 import naver_handoff
 import tistory_handoff
 import youtube
+import source_writer
 
 ASSETS=Path(getattr(sys,'_MEIPASS',Path(__file__).resolve().parent))
 ROOT=Path(os.environ.get('BLOGFLOW_DATA_DIR', str(Path(sys.executable).resolve().parent/'BlogFlow-data' if getattr(sys,'frozen',False) else Path(__file__).resolve().parent/'BlogFlow-data')))
@@ -265,6 +266,8 @@ def action(name,payload):
         return engine.read_json(ROOT/'favorites'/(ident+'.json'))
     if name=='naver-package':return naver_handoff.package(payload['doc'])
     if name=='tistory-package':return tistory_handoff.package(payload['doc'],payload.get('design'))
+    if name=='source-post':
+        return task(lambda:source_writer.build(payload,get_keys()))
     if name=='youtube-meta':
         writer.validate(payload['doc']);return {'title':payload['doc']['title'][:100],'description':youtube.describe(payload['doc'],str(payload.get('post_url',''))),'tags':tistory_handoff.tags(payload['doc'])}
     if name=='youtube-channels':

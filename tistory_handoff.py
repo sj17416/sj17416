@@ -17,5 +17,20 @@ def package(doc,design=None):
     body=writer.render(doc,design,{},False)
     disclaimer='<p style="font-size:13px;color:#687180">이 글은 정부 공식 사이트가 아닙니다. 금액·기간·대상은 공식 안내에서 최종 확인하세요.</p>'
     if '정부 공식 사이트가 아닙니다' not in body:body+=disclaimer
-    tips=['티스토리 편집기 우측 상단의 [기본모드] → [HTML]로 바꾼 뒤 본문 HTML을 붙여 넣으세요.','카테고리·공개 범위·발행 시간은 티스토리에서 직접 정하세요.','대표 이미지는 직접 촬영했거나 사용 권한이 있는 이미지를 지정하세요.','같은 글을 Blogger에도 발행했다면 중복 문서로 보일 수 있으니 제목·도입부를 다듬는 것을 권장합니다.','출처의 기준일과 적용 연도를 다시 확인하세요.']
-    return {'titles':titles,'tags':tags(doc),'html':body,'checklist':tips,'notice':'티스토리 글쓰기 API는 2024년에 종료되어 직접 발행이 필요합니다.'}
+    tips=['티스토리 편집기 우측 상단의 [기본모드] → [마크다운]으로 바꾼 뒤 본문 마크다운을 붙여 넣으세요. (HTML 모드를 쓰려면 HTML 받기를 사용)','카테고리·공개 범위·발행 시간은 티스토리에서 직접 정하세요.','대표 이미지는 직접 촬영했거나 사용 권한이 있는 이미지를 지정하세요.','같은 글을 Blogger에도 발행했다면 중복 문서로 보일 수 있으니 제목·도입부를 다듬는 것을 권장합니다.','출처의 기준일과 적용 연도를 다시 확인하세요.']
+    return {'titles':titles,'tags':tags(doc),'html':body,'markdown':to_markdown(doc),'checklist':tips,'notice':'티스토리 글쓰기 API는 2024년에 종료되어 직접 발행이 필요합니다.'}
+
+def to_markdown(doc,title=None):
+    lines=['# '+(title or doc['title']),'']
+    lines+=[str(p)+'\n' for p in doc['intro']]
+    for s in doc['sections']:
+        lines+=['## '+s['heading'],'']+[str(p)+'\n' for p in s['paragraphs']]
+    if doc.get('conclusion'):lines+=[str(doc['conclusion']),'']
+    lines+=['## 자주 묻는 질문','']
+    for f in doc['faq']:lines+=['**Q. '+f['question']+'**','','A. '+f['answer'],'']
+    lines+=['## 참고한 원문','']
+    for s in doc['sources']:
+        url=writer.safe_url(s.get('url',''))
+        if url:lines.append('- ['+s['title']+']('+url+')')
+    lines+=['','> 이 글은 정부 공식 사이트가 아닙니다. 금액·기간·대상은 공식 안내에서 최종 확인하세요.']
+    return '\n'.join(lines).strip()+'\n'
