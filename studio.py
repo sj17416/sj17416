@@ -26,6 +26,7 @@ import naver_handoff
 import tistory_handoff
 import youtube
 import source_writer
+import review_auto
 
 ASSETS=Path(getattr(sys,'_MEIPASS',Path(__file__).resolve().parent))
 ROOT=Path(os.environ.get('BLOGFLOW_DATA_DIR', str(Path(sys.executable).resolve().parent/'BlogFlow-data' if getattr(sys,'frozen',False) else Path(__file__).resolve().parent/'BlogFlow-data')))
@@ -68,7 +69,7 @@ def get_keys():
 
 
 def save_keys(updates):
-    allowed=['naver_ad_key','naver_ad_secret','naver_customer','naver_client','naver_secret','openai_key','openai_model','threads_token','facebook_token','facebook_page','facebook_version','x_token','telegram_token','telegram_chat']
+    allowed=['naver_ad_key','naver_ad_secret','naver_customer','naver_client','naver_secret','openai_key','openai_model','threads_token','facebook_token','facebook_page','facebook_version','x_token','telegram_token','telegram_chat','google_cse_key','google_cse_cx']
     with DATA_LOCK:
         keys=get_keys()
         for key in allowed:
@@ -82,7 +83,7 @@ def connections():
     keys=get_keys()
     return {'naver_ad':all(keys.get(k) for k in ['naver_ad_key','naver_ad_secret','naver_customer']),
         'naver_trend':bool(keys.get('naver_client') and keys.get('naver_secret')),'openai':bool(keys.get('openai_key')),
-        'openai_model':keys.get('openai_model','gpt-4.1-mini'),'google':(ROOT/'credentials.json').exists(),'youtube':(ROOT/'youtube-token.json').exists(),'threads':bool(keys.get('threads_token')),'facebook':bool(keys.get('facebook_token') and keys.get('facebook_page')),'x':bool(keys.get('x_token')),'telegram':bool(keys.get('telegram_token') and keys.get('telegram_chat'))}
+        'openai_model':keys.get('openai_model','gpt-4.1-mini'),'google':(ROOT/'credentials.json').exists(),'youtube':(ROOT/'youtube-token.json').exists(),'google_images':bool(keys.get('google_cse_key') and keys.get('google_cse_cx')),'threads':bool(keys.get('threads_token')),'facebook':bool(keys.get('facebook_token') and keys.get('facebook_page')),'x':bool(keys.get('x_token')),'telegram':bool(keys.get('telegram_token') and keys.get('telegram_chat'))}
 
 
 def read_store(name,default):
@@ -266,6 +267,16 @@ def action(name,payload):
         return engine.read_json(ROOT/'favorites'/(ident+'.json'))
     if name=='naver-package':return naver_handoff.package(payload['doc'])
     if name=='tistory-package':return tistory_handoff.package(payload['doc'],payload.get('design'))
+    if name=='reviews':return {'config':review_auto.config(read_store('reviews-config.json',{})),'items':read_store('reviews.json',[])[::-1][:60],'last':read_store('reviews-last.json',{})}
+    if name=='reviews-config':
+        cfg=review_auto.config({k:payload.get(k) for k in ['enabled','per_day','category','images','start_hour','end_hour','telegram'] if payload.get(k) is not None})
+        write_store('reviews-config.json',cfg);last=read_store('reviews-last.json',{});last.pop('next_run',None);write_store('reviews-last.json',last);return cfg
+    if name=='reviews-make':return task(lambda:review_auto.make(sys.modules[__name__],max(1,min(2,int(payload.get('count',1))))))
+    if name=='reviews-mark':
+        items=read_store('reviews.json',[])
+        for x in items:
+            if x['id']==payload.get('id'):x['status']=payload.get('status','used')
+        items=[x for x in items if x['status']!='deleted'];write_store('reviews.json',items);return {'ok':True}
     if name=='source-post':
         return task(lambda:source_writer.build(payload,get_keys()))
     if name=='youtube-meta':
@@ -398,11 +409,13 @@ def main():
             if BUSY==0:
                 try:autopilot.tick(sys.modules[__name__])
                 except Exception:pass
+                try:review_auto.tick(sys.modules[__name__])
+                except Exception:pass
     if '--serve-test' not in sys.argv:threading.Thread(target=scheduler,daemon=True).start()
     def watcher():
         while True:
             time.sleep(15)
-            if time.monotonic()-LAST_HEARTBEAT>180 and BUSY==0 and not read_store('automation.json',{}).get('enabled'):
+            if time.monotonic()-LAST_HEARTBEAT>180 and BUSY==0 and not read_store('automation.json',{}).get('enabled') and not read_store('reviews-config.json',{}).get('enabled'):
                 SERVER.shutdown();return
     threading.Thread(target=watcher,daemon=True).start()
     SERVER.serve_forever(poll_interval=.3)
