@@ -66,7 +66,7 @@ def make(app,count=1):
         for p in picks:
             r=source_writer.build({'source':p['source'],'critique':p['critique'],'link':p['sources'][0],'category':cfg['category'],'kind':'text','ai':True},keys)
             body=r['body']
-            first=p['sources'][0];body=body.replace('출처 URL: ['+first+']('+first+')',''.join(f'- 출처 URL: [{u}]({u})\n' for u in p['sources']).rstrip(),1)
+            body=body.replace('[출처]\n'+p['sources'][0],'[출처]\n'+'\n'.join(p['sources']),1)
             imgs=[];img_error=''
             try:imgs=images(p['title'],cfg['category'],keys,cfg['images'])
             except Exception as exc:img_error=clean(exc,keys)
