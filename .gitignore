@@ -5,6 +5,8 @@
 credentials.json
 client_secret*.json
 token.json
+youtube-token.json
+youtube-state.json
 connections.sec
 connections.tmp
 
